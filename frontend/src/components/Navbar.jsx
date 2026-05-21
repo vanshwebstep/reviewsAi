@@ -1,4 +1,9 @@
+import { Link } from "react-router-dom";
+import { useLocation, useNavigate } from 'react-router-dom';
+
 export default function Navbar() {
+  const navigate = useNavigate();
+
   return (
     <>
       <style>{`
@@ -53,10 +58,20 @@ export default function Navbar() {
           </span>
         </div>
 
-        <div className="nav-links" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+        <div className="nav-links" style={{ display: 'flex', alignItems: 'center', marginRight: '20px', gap: 4 }}>
           {['Home', 'Features', 'Pricing', 'Contact'].map(l => (
-            <a key={l} href={`#${l.toLowerCase()}`} className={`nav-link ${l === 'Pricing' ? 'nav-cta' : ''}`}>{l}</a>
+            <a key={l} href={`#${l.toLowerCase()}`} className={`nav-link ${l === '' ? 'nav-cta' : ''}`}>{l}</a>
           ))}
+
+          <button
+            onClick={() => navigate('/login')}
+            className="nav-link nav-cta"
+            style={{
+              marginLeft: '20px'
+            }}
+          >
+            Login
+          </button>
         </div>
       </nav>
     </>

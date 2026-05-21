@@ -2,7 +2,12 @@ import { useLocation } from 'react-router-dom';
 
 export default function Success() {
   const { state } = useLocation();
-  const qrUrl = 'https://webstepdev.com/demo/reviewsai/backend/' + state?.qrPath;
+  // https://webstepdev.com/demo/reviewsai/backend/
+  // http://localhost/reviewsai/backend/
+const url = import.meta.env.VITE_BASE_URL
+
+
+  const qrUrl = url + state?.qrPath;
   return (
     <>
       <style>{`
