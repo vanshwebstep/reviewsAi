@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { submitSubscribe } from '../api/api';
+import { createCheckoutSession } from '../api/api';
 import PremiumAlert from '../components/PremiumAlert';
 
 const fieldLabels = {
@@ -12,11 +12,11 @@ const fieldLabels = {
 };
 
 const fieldIcons = {
-  full_name: '👤',
-  email: '✉️',
-  phone: '📞',
-  google_business_url: '🔗',
-  password: '🔒',
+  full_name: '\u{1F464}',
+  email: '\u2709\uFE0F',
+  phone: '\u{1F4DE}',
+  google_business_url: '\u{1F517}',
+  password: '\u{1F512}',
 };
 
 const fieldPlaceholders = {
@@ -27,26 +27,74 @@ const fieldPlaceholders = {
   password: 'Min. 6 characters',
 };
 
+const parseApiPayload = data => {
+  if (typeof data !== 'string') return data || {};
+
+  try {
+    return JSON.parse(data);
+  } catch {
+    const start = data.indexOf('{');
+    const end = data.lastIndexOf('}');
+    if (start !== -1 && end > start) {
+      try {
+        return JSON.parse(data.slice(start, end + 1));
+      } catch {
+        return {};
+      }
+    }
+    return {};
+  }
+};
+
 export default function Subscribe() {
-  const { state } = useLocation();
+  const { state, search } = useLocation();
   const navigate = useNavigate();
+  const savedForm = (() => {
+    try {
+      return JSON.parse(sessionStorage.getItem('pendingSubscribeForm') || '{}');
+    } catch {
+      return {};
+    }
+  })();
   const [form, setForm] = useState({
-    full_name: '',
-    email: '',
-    phone: '',
-    plan_name: state?.planName || '',
-    plan_amount: state?.planAmount || '',
-    google_business_url: '',
-    password: '',
+    full_name: savedForm.full_name || '',
+    email: savedForm.email || '',
+    phone: savedForm.phone || '',
+    plan_name: state?.planName || savedForm.plan_name || '',
+    plan_amount: state?.planAmount || savedForm.plan_amount || '',
+    google_business_url: savedForm.google_business_url || '',
+    password: savedForm.password || '',
   });
-  const [alert, setAlert] = useState(null);
+  const [alert, setAlert] = useState(() => {
+    const params = new URLSearchParams(search);
+    return params.get('payment') === 'cancelled'
+      ? {
+          type: 'warning',
+          title: 'Payment cancelled',
+          message: 'Your details are still here. You can retry the Stripe demo payment when ready.',
+        }
+      : null;
+  });
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [focused, setFocused] = useState('');
+
 
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async () => {
+    const requiredFields = ['full_name', 'email', 'phone', 'plan_name', 'plan_amount', 'google_business_url', 'password'];
+    const missingField = requiredFields.find(field => !String(form[field] || '').trim());
+
+    if (missingField) {
+      setAlert({
+        type: 'warning',
+        title: 'Missing details',
+        message: 'Please fill all fields before starting the Stripe demo payment.',
+        actions: [{ label: 'Got it', variant: 'primary', onClick: () => setAlert(null) }]
+      });
+      return;
+    }
+
     if (!form.password || form.password.length < 6) {
       setAlert({
         type: 'warning',
@@ -59,35 +107,40 @@ export default function Subscribe() {
 
     setLoading(true);
     try {
-      const res = await submitSubscribe(form);
+      const frontendBaseUrl = `${window.location.origin}/demo/reviewsai/frontend`;
+      sessionStorage.setItem('pendingSubscribeForm', JSON.stringify(form));
+      const res = await createCheckoutSession({
+        ...form,
+        frontend_base_url: frontendBaseUrl,
+      });
+      const payload = parseApiPayload(res.data);
+      const checkoutUrl = payload.checkout_url || payload.checkoutUrl;
 
-      if (!res.data.success) {
+      if (!payload.success || !checkoutUrl) {
         setAlert({
           type: 'error',
-          title: 'Email already registered',
-          message: 'This email is already linked to an account. Please login to continue.',
-          actions: [
-            { label: 'Go to login',       variant: 'primary',   onClick: () => navigate('/login') },
-            { label: 'Try another email', variant: 'secondary', onClick: () => setAlert(null) },
-          ]
+          title: 'Payment could not start',
+          message: payload.message || payload.error || 'Checkout URL missing from backend response.',
+          actions: [{ label: 'Retry', variant: 'primary', onClick: () => setAlert(null) }]
         });
         return;
       }
 
-      // ✅ Sirf account create, QR dashboard se generate hoga
-      navigate('/login', {
-        state: {
-          message: 'Account created! Please login and generate your QR from dashboard.',
-          email: form.email,
-        }
-      });
-
+      window.location.assign(checkoutUrl);
     } catch (err) {
+      const payload = parseApiPayload(err.response?.data);
+      const status = err.response?.status;
+      const message = payload.message || payload.error || err.message || 'Please check your connection and try again.';
       setAlert({
         type: 'error',
-        title: 'Something went wrong',
-        message: 'Please check your connection and try again.',
-        actions: [{ label: 'Retry', variant: 'primary', onClick: () => setAlert(null) }]
+        title: status === 409 ? 'Email already registered' : 'Payment could not start',
+        message,
+        actions: status === 409
+          ? [
+              { label: 'Go to login', variant: 'primary', onClick: () => navigate('/login') },
+              { label: 'Try another email', variant: 'secondary', onClick: () => setAlert(null) },
+            ]
+          : [{ label: 'Retry', variant: 'primary', onClick: () => setAlert(null) }]
       });
     } finally {
       setLoading(false);
@@ -166,7 +219,6 @@ export default function Subscribe() {
           animation: 'fadeUp 0.6s ease both'
         }}>
 
-          {/* Header */}
           <div style={{ marginBottom: 36 }}>
             <div style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
@@ -174,7 +226,7 @@ export default function Subscribe() {
               padding: '5px 14px', borderRadius: 100,
               fontSize: 12, fontWeight: 700, marginBottom: 16,
               border: '1px solid #bae6fd'
-            }}>✦ Almost there!</div>
+            }}>{'\u2726'} Almost there!</div>
             <h2 style={{ fontSize: 26, fontWeight: 600, color: '#0f172a', marginBottom: 8, letterSpacing: '-0.7px' }}>
               Subscribe to {form.plan_name}
             </h2>
@@ -182,10 +234,9 @@ export default function Subscribe() {
               background: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
               color: '#fff', padding: '4px 14px',
               borderRadius: 100, fontSize: 15, fontWeight: 600,
-            }}>₹{form.plan_amount}<span style={{ fontWeight: 500, fontSize: 12, opacity: 0.85 }}>/mo</span></span>
+            }}>{'\u20B9'}{form.plan_amount}<span style={{ fontWeight: 500, fontSize: 12, opacity: 0.85 }}>/mo</span></span>
           </div>
 
-          {/* Fields — only 5 fields, no key_features */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
             {['full_name', 'email', 'phone', 'google_business_url', 'password'].map(field => (
               <div key={field}>
@@ -209,12 +260,10 @@ export default function Subscribe() {
                     value={form[field]}
                     onChange={handleChange}
                     placeholder={fieldPlaceholders[field]}
-                    onFocus={() => setFocused(field)}
-                    onBlur={() => setFocused('')}
                   />
                   {field === 'password' && (
                     <button type="button" className="eye-btn" onClick={() => setShowPassword(p => !p)}>
-                      {showPassword ? '🙈' : '👁️'}
+                      {showPassword ? '\u{1F648}' : '\u{1F441}\uFE0F'}
                     </button>
                   )}
                 </div>
@@ -225,11 +274,11 @@ export default function Subscribe() {
           <div style={{ height: 1, background: '#f1f5f9', margin: '28px 0 0' }} />
 
           <button className="sub-btn" onClick={handleSubmit} disabled={loading}>
-            {loading ? '⏳ Creating your account...' : '⚡ Create My Account'}
+            {loading ? 'Redirecting to secure payment...' : 'Proceed to Demo Payment'}
           </button>
 
           <p style={{ textAlign: 'center', fontSize: 12, color: '#94a3b8', marginTop: 16, lineHeight: 1.6 }}>
-            🔒 Your password is encrypted & secure
+            {'\u{1F512}'} Your password is encrypted & secure
           </p>
         </div>
         <PremiumAlert config={alert} onClose={() => setAlert(null)} />

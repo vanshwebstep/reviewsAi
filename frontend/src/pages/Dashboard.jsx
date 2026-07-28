@@ -1,15 +1,23 @@
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { generateQR, generateAIReviews } from '../api/api';
+import { generateQR, generateAIReviews, parseApiPayload } from '../api/api';
 // https://webstepdev.com/demo/reviewsai/backend
 // http://localhost/reviewsai/backend
 const url = import.meta.env.VITE_BASE_URL
 const BACKEND_BASE = url;
 
+const readStoredUser = () => {
+  try {
+    return JSON.parse(localStorage.getItem('user') || 'null');
+  } catch {
+    return null;
+  }
+};
+
 export default function Dashboard() {
   const { state } = useLocation();
   const navigate = useNavigate();
-  const [user, setUser] = useState(state?.user);
+  const [user] = useState(() => state?.user || readStoredUser());
 
   const [keyWords, setKeyWords] = useState(user?.key_words || '');
   const [generating, setGenerating] = useState(false);
@@ -41,7 +49,7 @@ export default function Dashboard() {
     try {
       // Step 1: Save key words to DB
       setGenStep('💾 Saving your key words...');
-      await fetch(`${BACKEND_BASE}/api/save_key_words.php`, {
+      const saveRes = await fetch(`${BACKEND_BASE}/api/save_key_words.php`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -49,14 +57,21 @@ export default function Dashboard() {
           key_words: keyWords,
         }),
       });
+      const savePayload = parseApiPayload(await saveRes.text());
+      if (!savePayload.success) {
+        throw new Error(savePayload.message || savePayload.error || 'Could not save key words.');
+      }
 
       // Step 2: Generate AI reviews
       setGenStep('🤖 AI reviews generate ho rahe hain...');
-      await generateAIReviews({
+      const reviewRes = await generateAIReviews({
         subscription_id: user.id,
         key_words: keyWords,
         business_name: user.full_name,
       });
+      if (!reviewRes.data?.success) {
+        throw new Error(reviewRes.data?.message || reviewRes.data?.error || 'Could not generate AI reviews.');
+      }
 
       // Step 3: Generate QR
       setGenStep('🔗 QR Code ban raha hai...');
@@ -65,11 +80,15 @@ export default function Dashboard() {
         google_business_url: user.google_business_url,
       });
 
+      if (!qrRes.data?.success || !qrRes.data?.qr_path) {
+        throw new Error(qrRes.data?.message || qrRes.data?.error || 'Could not generate QR code.');
+      }
+
       setQrPath(qrRes.data.qr_path);
       setGenStep('');
     } catch (err) {
       console.error('Full error:', err)
-      alert('Something went wrong. Please try again.');
+      alert(err.message || 'Something went wrong. Please try again.');
       setGenStep('');
     } finally {
       setGenerating(false);
@@ -217,7 +236,7 @@ export default function Dashboard() {
               </h1>
               <p style={{ color: '#64748b', fontSize: 14, margin: '4px 0 0' }}>Here's your subscription & QR overview</p>
             </div>
-            <button className="logout-btn" onClick={() => navigate('/login')}>🚪 Logout</button>
+            <button className="logout-btn" onClick={() => { localStorage.removeItem('user'); localStorage.removeItem('token'); navigate('/login'); }}>🚪 Logout</button>
           </div>
 
           {/* Grid */}

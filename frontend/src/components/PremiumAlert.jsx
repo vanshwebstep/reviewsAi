@@ -1,15 +1,19 @@
 import { useEffect } from 'react';
 
 export default function PremiumAlert({ config, onClose }) {
-  if (!config) return null;
-
-  const icons = { error: '✗', success: '✓', warning: '!' };
+  const icons = { error: 'x', success: 'OK', warning: '!' };
+  const actions = Array.isArray(config?.actions) && config.actions.length
+    ? config.actions
+    : [{ label: 'Close', variant: 'primary', onClick: onClose }];
 
   useEffect(() => {
+    if (!config) return undefined;
     const handleKey = (e) => { if (e.key === 'Escape') onClose(); };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, []);
+  }, [config, onClose]);
+
+  if (!config) return null;
 
   return (
     <>
@@ -37,14 +41,14 @@ export default function PremiumAlert({ config, onClose }) {
         .pal-icon {
           width: 64px; height: 64px; border-radius: 50%;
           display: flex; align-items: center; justify-content: center;
-          margin: 0 auto 20px; font-size: 26px; font-weight: 700;
+          margin: 0 auto 20px; font-size: 22px; font-weight: 700;
         }
         .pal-icon.error   { background: #FCEBEB; color: #A32D2D; }
         .pal-icon.success { background: #EAF3DE; color: #3B6D11; }
         .pal-icon.warning { background: #FAEEDA; color: #854F0B; }
         .pal-title { font-size: 17px; font-weight: 600; color: #0f172a; margin: 0 0 8px; }
         .pal-msg   { font-size: 14px; color: #64748b; line-height: 1.6; margin: 0 0 24px; }
-        .pal-actions { display: flex; gap: 10px; justify-content: center; }
+        .pal-actions { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
         .pal-btn { padding: 10px 22px; border-radius: 10px; font-size: 14px; font-weight: 600; cursor: pointer; border: none; transition: all 0.18s; }
         .pal-btn.primary   { background: #E24B4A; color: #fff; }
         .pal-btn.primary:hover { background: #A32D2D; }
@@ -54,13 +58,13 @@ export default function PremiumAlert({ config, onClose }) {
 
       <div className="pal-overlay" onClick={(e) => e.target.classList.contains('pal-overlay') && onClose()}>
         <div className="pal-box">
-          <div className={`pal-icon ${config.type}`}>{icons[config.type]}</div>
-          <p className="pal-title">{config.title}</p>
-          <p className="pal-msg">{config.message}</p>
+          <div className={`pal-icon ${config.type || 'error'}`}>{icons[config.type] || '!'}</div>
+          <p className="pal-title">{config.title || 'Notice'}</p>
+          <p className="pal-msg">{config.message || ''}</p>
           <div className="pal-actions">
-            {config.actions.map((a, i) => (
-              <button key={i} className={`pal-btn ${a.variant || 'primary'}`} onClick={a.onClick}>
-                {a.label}
+            {actions.map((a, i) => (
+              <button key={i} className={`pal-btn ${a.variant || 'primary'}`} onClick={a.onClick || onClose}>
+                {a.label || 'Close'}
               </button>
             ))}
           </div>

@@ -4,10 +4,29 @@ import { useNavigate } from 'react-router-dom';
 
 export default function PricingPlans() {
   const [plans, setPlans] = useState([]);
+  const [pricingError, setPricingError] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetchPlans().then(r => setPlans(r.data.plans));
+    let active = true;
+
+    fetchPlans()
+      .then(r => {
+        if (!active) return;
+        const list = Array.isArray(r.data?.plans) ? r.data.plans : [];
+        setPlans(list.map(plan => ({
+          ...plan,
+          features: Array.isArray(plan.features) ? plan.features : [],
+        })));
+        setPricingError(list.length ? '' : (r.data?.message || r.data?.error || 'Plans are unavailable right now.'));
+      })
+      .catch(err => {
+        if (!active) return;
+        setPlans([]);
+        setPricingError(err.response?.data?.message || err.response?.data?.error || 'Plans are unavailable right now.');
+      });
+
+    return () => { active = false; };
   }, []);
 
   const handleSelect = (plan) => {
@@ -115,6 +134,11 @@ export default function PricingPlans() {
               alignItems: 'stretch',   /* all rows same height */
             }}
           >
+            {plans.length === 0 && (
+              <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#64748b', fontSize: 14, padding: '28px 16px' }}>
+                {pricingError || 'Loading plans...'}
+              </div>
+            )}
             {plans.map(plan => (
               <div
                 key={plan.id}
@@ -159,11 +183,11 @@ export default function PricingPlans() {
 
                 {/* Features — flex-grow pushes button to bottom */}
                 <ul style={{ listStyle: 'none', marginBottom: 28, flex: 1 }}>
-                  {plan.features.map((f, i) => (
+                  {(Array.isArray(plan.features) ? plan.features : []).map((f, i) => (
                     <li key={i} style={{
                       display: 'flex', alignItems: 'flex-start', gap: 10,
                       padding: '7px 0', color: '#475569', fontSize: 14,
-                      borderBottom: i < plan.features.length - 1 ? '1px solid #f8fafc' : 'none'
+                      borderBottom: i < (Array.isArray(plan.features) ? plan.features.length : 0) - 1 ? '1px solid #f8fafc' : 'none'
                     }}>
                       <span style={{
                         width: 20, height: 20, borderRadius: '50%', flexShrink: 0,

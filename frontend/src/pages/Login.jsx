@@ -2,6 +2,25 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { loginUser } from '../api/api';
 
+const parseApiPayload = data => {
+  if (typeof data !== 'string') return data || {};
+
+  try {
+    return JSON.parse(data);
+  } catch {
+    const start = data.indexOf('{');
+    const end = data.lastIndexOf('}');
+    if (start !== -1 && end > start) {
+      try {
+        return JSON.parse(data.slice(start, end + 1));
+      } catch {
+        return {};
+      }
+    }
+    return {};
+  }
+};
+
 export default function Login() {
   const { state } = useLocation();
   const navigate = useNavigate();
@@ -24,13 +43,17 @@ export default function Login() {
     setLoading(true);
     try {
       const res = await loginUser(form);
-      if (res.data.success) {
-        navigate('/dashboard', { state: { user: res.data.user } });
+      const payload = parseApiPayload(res.data);
+
+      if (payload.success && payload.user) {
+        localStorage.setItem('user', JSON.stringify(payload.user));
+        navigate('/dashboard', { state: { user: payload.user } });
       } else {
-        setError(res.data.message || 'Invalid credentials.');
+        setError(payload.message || payload.error || 'Invalid credentials.');
       }
     } catch (err) {
-      setError('Something went wrong. Please try again.');
+      const payload = parseApiPayload(err.response?.data);
+      setError(payload.message || payload.error || err.message || 'Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -93,7 +116,6 @@ export default function Login() {
         padding: '40px 20px',
         position: 'relative', overflow: 'hidden',
       }}>
-        {/* Decorative blobs */}
         <div style={{ position:'absolute', top:'8%', left:'6%', width:300, height:300, borderRadius:'50%', background:'radial-gradient(circle, rgba(14,165,233,0.08) 0%, transparent 70%)', pointerEvents:'none' }} />
         <div style={{ position:'absolute', bottom:'10%', right:'8%', width:240, height:240, borderRadius:'50%', background:'radial-gradient(circle, rgba(2,132,199,0.07) 0%, transparent 70%)', pointerEvents:'none' }} />
 
@@ -105,7 +127,6 @@ export default function Login() {
           boxShadow: '0 24px 80px rgba(14,165,233,0.11), 0 2px 12px rgba(0,0,0,0.05)',
           border: '1.5px solid #e0f2fe',
         }}>
-          {/* Logo / Icon */}
           <div style={{ textAlign: 'center', marginBottom: 28 }}>
             <div style={{
               width: 60, height: 60,
@@ -115,12 +136,11 @@ export default function Login() {
               fontSize: 26,
               boxShadow: '0 8px 24px rgba(14,165,233,0.30)',
               marginBottom: 16,
-            }}>⚡</div>
+            }}>{'\u26A1'}</div>
             <h1 style={{ fontSize: 24, fontWeight: 700, color: '#0f172a', margin: 0, letterSpacing: '-0.6px' }}>Welcome back</h1>
             <p style={{ color: '#64748b', fontSize: 14, margin: '6px 0 0' }}>Login to access your QR dashboard</p>
           </div>
 
-          {/* Success message from subscribe */}
           {state?.message && (
             <div style={{
               background: '#f0fdf4', border: '1.5px solid #bbf7d0',
@@ -128,11 +148,10 @@ export default function Login() {
               color: '#15803d', fontSize: 13, fontWeight: 500,
               marginBottom: 22, textAlign: 'center'
             }}>
-              ✅ {state.message}
+              {'\u2705'} {state.message}
             </div>
           )}
 
-          {/* Error */}
           {error && (
             <div className="error-box" style={{
               background: '#fff1f2', border: '1.5px solid #fecdd3',
@@ -140,17 +159,16 @@ export default function Login() {
               color: '#be123c', fontSize: 13, fontWeight: 500,
               marginBottom: 22, textAlign: 'center'
             }}>
-              ⚠️ {error}
+              {'\u26A0\uFE0F'} {error}
             </div>
           )}
 
-          {/* Email */}
           <div style={{ marginBottom: 18 }}>
             <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 7 }}>
               Email Address
             </label>
             <div style={{ position: 'relative' }}>
-              <span style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', fontSize:16, pointerEvents:'none' }}>✉️</span>
+              <span style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', fontSize:16, pointerEvents:'none' }}>{'\u2709\uFE0F'}</span>
               <input
                 className="login-input"
                 name="email"
@@ -163,13 +181,12 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Password */}
           <div style={{ marginBottom: 26 }}>
             <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 7 }}>
               Password
             </label>
             <div style={{ position: 'relative' }}>
-              <span style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', fontSize:16, pointerEvents:'none' }}>🔒</span>
+              <span style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', fontSize:16, pointerEvents:'none' }}>{'\u{1F512}'}</span>
               <input
                 className="login-input"
                 name="password"
@@ -185,17 +202,17 @@ export default function Login() {
                 onClick={() => setShowPassword(p => !p)}
                 style={{ position:'absolute', right:14, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', fontSize:16, color:'#94a3b8', padding:0 }}
               >
-                {showPassword ? '🙈' : '👁️'}
+                {showPassword ? '\u{1F648}' : '\u{1F441}\uFE0F'}
               </button>
             </div>
           </div>
 
           <button className="login-btn" onClick={handleLogin} disabled={loading}>
-            {loading ? '⏳ Logging in...' : '🔓 Login to Dashboard'}
+            {loading ? 'Logging in...' : 'Login to Dashboard'}
           </button>
 
           <p style={{ textAlign:'center', fontSize:12, color:'#94a3b8', marginTop:18, lineHeight:1.6 }}>
-            🔒 Secured & encrypted session
+            {'\u{1F512}'} Secured & encrypted session
           </p>
         </div>
       </div>
