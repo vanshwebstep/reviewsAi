@@ -4,7 +4,7 @@ import { createCheckoutSession } from '../api/api';
 import PremiumAlert from '../components/PremiumAlert';
 
 const fieldLabels = {
-  full_name: 'Full Name',
+  full_name: 'Business Name',
   email: 'Email Address',
   phone: 'Phone Number',
   google_business_url: 'Google Business URL',
@@ -12,7 +12,7 @@ const fieldLabels = {
 };
 
 const fieldIcons = {
-  full_name: '\u{1F464}',
+  full_name: '🏢',
   email: '\u2709\uFE0F',
   phone: '\u{1F4DE}',
   google_business_url: '\u{1F517}',
@@ -20,7 +20,7 @@ const fieldIcons = {
 };
 
 const fieldPlaceholders = {
-  full_name: 'John Doe',
+  full_name: 'Enter Your Business Name',
   email: 'you@example.com',
   phone: '+91 98765 43210',
   google_business_url: 'Paste your Google Business profile URL',
@@ -69,10 +69,10 @@ export default function Subscribe() {
     const params = new URLSearchParams(search);
     return params.get('payment') === 'cancelled'
       ? {
-          type: 'warning',
-          title: 'Payment cancelled',
-          message: 'Your details are still here. You can retry the Stripe demo payment when ready.',
-        }
+        type: 'warning',
+        title: 'Payment cancelled',
+        message: 'Your details are still here. You can retry the Stripe demo payment when ready.',
+      }
       : null;
   });
   const [loading, setLoading] = useState(false);
@@ -125,7 +125,7 @@ export default function Subscribe() {
         });
         return;
       }
-
+      localStorage.setItem('pendingSubscribeForm', JSON.stringify(form));
       window.location.assign(checkoutUrl);
     } catch (err) {
       const payload = parseApiPayload(err.response?.data);
@@ -137,9 +137,9 @@ export default function Subscribe() {
         message,
         actions: status === 409
           ? [
-              { label: 'Go to login', variant: 'primary', onClick: () => navigate('/login') },
-              { label: 'Try another email', variant: 'secondary', onClick: () => setAlert(null) },
-            ]
+            { label: 'Go to login', variant: 'primary', onClick: () => navigate('/login') },
+            { label: 'Try another email', variant: 'secondary', onClick: () => setAlert(null) },
+          ]
           : [{ label: 'Retry', variant: 'primary', onClick: () => setAlert(null) }]
       });
     } finally {
@@ -252,10 +252,10 @@ export default function Subscribe() {
                     className={`sub-input${field === 'password' ? ' password-input' : ''}`}
                     name={field}
                     type={
-                      field === 'email'    ? 'email'
-                      : field === 'phone'  ? 'tel'
-                      : field === 'password' ? (showPassword ? 'text' : 'password')
-                      : 'text'
+                      field === 'email' ? 'email'
+                        : field === 'phone' ? 'tel'
+                          : field === 'password' ? (showPassword ? 'text' : 'password')
+                            : 'text'
                     }
                     value={form[field]}
                     onChange={handleChange}

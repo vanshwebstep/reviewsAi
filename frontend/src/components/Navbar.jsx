@@ -1,7 +1,10 @@
+// components/Navbar.jsx
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   return (
     <>
@@ -59,17 +62,15 @@ export default function Navbar() {
 
         <div className="nav-links" style={{ display: 'flex', alignItems: 'center', marginRight: '20px', gap: 4 }}>
           {['Home', 'Features', 'Pricing', 'Contact'].map(l => (
-            <a key={l} href={`#${l.toLowerCase()}`} className={`nav-link ${l === '' ? 'nav-cta' : ''}`}>{l}</a>
+            <a key={l} href={`#${l.toLowerCase()}`} className="nav-link">{l}</a>
           ))}
 
           <button
-            onClick={() => navigate('/login')}
+            onClick={() => navigate(user ? '/dashboard' : '/login')}
             className="nav-link nav-cta"
-            style={{
-              marginLeft: '20px'
-            }}
+            style={{ marginLeft: '20px' }}
           >
-            Login
+            {user ? 'Dashboard' : 'Login'}
           </button>
         </div>
       </nav>

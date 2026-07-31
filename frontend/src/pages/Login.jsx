@@ -1,10 +1,11 @@
+// pages/Login.jsx
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { loginUser } from '../api/api';
+import { useAuth } from '../context/AuthContext';
 
 const parseApiPayload = data => {
   if (typeof data !== 'string') return data || {};
-
   try {
     return JSON.parse(data);
   } catch {
@@ -24,6 +25,7 @@ const parseApiPayload = data => {
 export default function Login() {
   const { state } = useLocation();
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [form, setForm] = useState({
     email: state?.email || '',
     password: '',
@@ -45,9 +47,9 @@ export default function Login() {
       const res = await loginUser(form);
       const payload = parseApiPayload(res.data);
 
-      if (payload.success && payload.user) {
-        localStorage.setItem('user', JSON.stringify(payload.user));
-        navigate('/dashboard', { state: { user: payload.user } });
+      if (payload.success && payload.user && payload.token) {
+        login(payload.user, payload.token);
+        navigate('/dashboard');
       } else {
         setError(payload.message || payload.error || 'Invalid credentials.');
       }

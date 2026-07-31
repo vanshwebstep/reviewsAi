@@ -14,10 +14,11 @@ export default function PricingPlans() {
       .then(r => {
         if (!active) return;
         const list = Array.isArray(r.data?.plans) ? r.data.plans : [];
-        setPlans(list.map(plan => ({
-          ...plan,
-          features: Array.isArray(plan.features) ? plan.features : [],
-        })));
+       setPlans(list.map(plan => ({
+  ...plan,
+  is_popular: !!plan.is_popular,
+  features: Array.isArray(plan.features) ? plan.features : [],
+})));
         setPricingError(list.length ? '' : (r.data?.message || r.data?.error || 'Plans are unavailable right now.'));
       })
       .catch(err => {
@@ -129,7 +130,7 @@ export default function PricingPlans() {
             className="plans-grid"
             style={{
               display: 'grid',
-              gridTemplateColumns: 'repeat(3, 1fr)',
+              gridTemplateColumns: 'repeat(2, 1fr)',
               gap: 24,
               alignItems: 'stretch',   /* all rows same height */
             }}
@@ -144,7 +145,7 @@ export default function PricingPlans() {
                 key={plan.id}
                 className={`plan-card ${plan.is_popular ? 'popular' : ''}`}
               >
-                {plan.is_popular && (
+             {!!plan.is_popular && (
                   <div style={{
                     position: 'absolute', top: -14, left: '50%',
                     transform: 'translateX(-50%)',

@@ -1,13 +1,37 @@
+import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 export default function Success() {
   const { state } = useLocation();
-  // https://webstepdev.com/demo/reviewsai/backend/
-  // http://localhost/reviewsai/backend/
-const url = import.meta.env.VITE_BASE_URL
-
+  const url = import.meta.env.VITE_BASE_URL;
 
   const qrUrl = url + state?.qrPath;
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (!qrUrl) return;
+    setDownloading(true);
+    try {
+      const res = await fetch(qrUrl, { mode: 'cors' });
+      if (!res.ok) throw new Error('Download failed');
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+
+      const link = document.createElement('a');
+      link.href = blobUrl;
+      link.download = 'qr-code.png';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error('QR download failed:', err);
+    } finally {
+      setDownloading(false);
+    }
+  };
+
   return (
     <>
       <style>{`
@@ -36,16 +60,23 @@ const url = import.meta.env.VITE_BASE_URL
           color: #fff;
           padding: 14px 36px;
           border-radius: 12px;
+          border: none;
           text-decoration: none;
           font-weight: 700;
           font-size: 15px;
+          font-family: 'Poppins', sans-serif;
           box-shadow: 0 8px 28px rgba(14,165,233,0.35);
           transition: all 0.25s;
           letter-spacing: -0.2px;
+          cursor: pointer;
         }
-        .success-download-btn:hover {
+        .success-download-btn:hover:not(:disabled) {
           transform: translateY(-3px);
           box-shadow: 0 12px 36px rgba(14,165,233,0.45);
+        }
+        .success-download-btn:disabled {
+          opacity: 0.7;
+          cursor: not-allowed;
         }
       `}</style>
 
@@ -129,9 +160,9 @@ const url = import.meta.env.VITE_BASE_URL
           </div>
 
           <div>
-            <a href={qrUrl} download className="success-download-btn">
-              ↓ Download QR Code
-            </a>
+            <button onClick={handleDownload} disabled={downloading} className="success-download-btn">
+              {downloading ? 'Preparing...' : '↓ Download QR Code'}
+            </button>
           </div>
 
           {/* Tips */}

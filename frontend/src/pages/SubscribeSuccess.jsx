@@ -1,10 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { confirmStripeSubscription, loginUser } from '../api/api';
+import { useAuth } from '../context/AuthContext';
 
 const parseApiPayload = data => {
   if (typeof data !== 'string') return data || {};
-
   try {
     return JSON.parse(data);
   } catch {
@@ -25,18 +25,19 @@ export default function SubscribeSuccess() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const sessionId = searchParams.get('session_id');
+  const { login } = useAuth();
   const [status, setStatus] = useState(sessionId ? 'processing' : 'error');
   const [message, setMessage] = useState(sessionId ? 'Confirming your Stripe demo payment...' : 'Stripe session is missing. Please start the subscription again.');
 
+  const hasRun = useRef(false);
+
   useEffect(() => {
     if (!sessionId) return;
-
-    let active = true;
+    if (hasRun.current) return;
+    hasRun.current = true;
 
     confirmStripeSubscription({ session_id: sessionId })
       .then(async res => {
-        if (!active) return;
-
         const payload = parseApiPayload(res.data);
 
         if (!payload.success) {
@@ -47,36 +48,37 @@ export default function SubscribeSuccess() {
 
         const pendingForm = parseApiPayload(sessionStorage.getItem('pendingSubscribeForm'));
         let user = payload.user || null;
+        let token = payload.token || null;
 
-        if (payload.token) {
-          localStorage.setItem('token', payload.token); // ya jo bhi key aapke app me use hoti hai
-        }
-
-        if (!user && pendingForm.email && pendingForm.password) {
+        if ((!user || !token) && pendingForm.email && pendingForm.password) {
           try {
             const loginRes = await loginUser({
               email: pendingForm.email,
               password: pendingForm.password,
             });
             const loginPayload = parseApiPayload(loginRes.data);
-            user = loginPayload.success ? loginPayload.user || null : null;
+            if (loginPayload.success) {
+              user = loginPayload.user || user;
+              token = loginPayload.token || token;
+            }
           } catch {
-            user = null;
+            // ignore, handled below
           }
         }
 
         sessionStorage.removeItem('pendingSubscribeForm');
+        localStorage.removeItem('pendingSubscribeForm');
 
-        if (user) {
-          localStorage.setItem('user', JSON.stringify(user));
+        if (user && token) {
+          login(user, token);
         }
 
         setStatus('success');
         setMessage(payload.message || 'Payment successful. Redirecting to your dashboard...');
 
         setTimeout(() => {
-          if (user) {
-            navigate('/dashboard', { replace: true, state: { user } }); // login page ki jagah direct dashboard
+          if (user && token) {
+            navigate('/dashboard', { replace: true });
           } else {
             navigate('/login', {
               replace: true,
@@ -89,16 +91,11 @@ export default function SubscribeSuccess() {
         }, 1400);
       })
       .catch(err => {
-        if (!active) return;
         const payload = parseApiPayload(err.response?.data);
         setStatus('error');
         setMessage(payload.message || payload.error || err.message || 'Payment confirmation failed. Please contact support if amount was deducted.');
       });
-
-    return () => {
-      active = false;
-    };
-  }, [navigate, sessionId]);
+  }, [sessionId]);
 
   return (
     <>

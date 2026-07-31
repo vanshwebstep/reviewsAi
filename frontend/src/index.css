@@ -134,3 +134,15 @@ code {
   padding: 4px 8px;
   background: var(--code-bg);
 }
+
+.error-msg {
+  text-align: center;
+  font-size: 13px; font-weight: 600;
+  color: #dc2626;
+  margin-bottom: 12px;
+  padding: 10px 14px;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  animation: fadeUp 0.3s ease;
+}
