@@ -62,6 +62,7 @@ export default function Subscribe() {
     phone: savedForm.phone || '',
     plan_name: state?.planName || savedForm.plan_name || '',
     plan_amount: state?.planAmount || savedForm.plan_amount || '',
+    billing_cycle: state?.billingCycle || savedForm.billing_cycle || 'monthly',
     google_business_url: savedForm.google_business_url || '',
     password: savedForm.password || '',
   });
@@ -234,7 +235,7 @@ export default function Subscribe() {
               background: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
               color: '#fff', padding: '4px 14px',
               borderRadius: 100, fontSize: 15, fontWeight: 600,
-            }}>{'\u20B9'}{form.plan_amount}<span style={{ fontWeight: 500, fontSize: 12, opacity: 0.85 }}>/mo</span></span>
+            }}>${form.plan_amount}<span style={{ fontWeight: 500, fontSize: 12, opacity: 0.85 }}>{form.billing_cycle === 'annual' ? '/yr' : '/mo'}</span></span>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>

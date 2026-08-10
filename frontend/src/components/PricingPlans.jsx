@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 export default function PricingPlans() {
   const [plans, setPlans] = useState([]);
   const [pricingError, setPricingError] = useState('');
+  const [billing, setBilling] = useState('monthly'); // 'monthly' | 'annual'
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -14,11 +15,15 @@ export default function PricingPlans() {
       .then(r => {
         if (!active) return;
         const list = Array.isArray(r.data?.plans) ? r.data.plans : [];
-       setPlans(list.map(plan => ({
-  ...plan,
-  is_popular: !!plan.is_popular,
-  features: Array.isArray(plan.features) ? plan.features : [],
-})));
+        setPlans(list.map(plan => ({
+          ...plan,
+          is_popular: !!plan.is_popular,
+          features: Array.isArray(plan.features) ? plan.features : [],
+          price_monthly: Number(plan.price_monthly ?? plan.price ?? 0),
+          price_annual: Number(plan.price_annual ?? 0),
+          price_annual_per_month: Number(plan.price_annual_per_month ?? 0),
+          annual_discount_percent: Number(plan.annual_discount_percent ?? 20),
+        })));
         setPricingError(list.length ? '' : (r.data?.message || r.data?.error || 'Plans are unavailable right now.'));
       })
       .catch(err => {
@@ -31,7 +36,14 @@ export default function PricingPlans() {
   }, []);
 
   const handleSelect = (plan) => {
-    navigate('/subscribe', { state: { planName: plan.name, planAmount: plan.price } });
+    const planAmount = billing === 'annual' ? plan.price_annual : plan.price_monthly;
+    navigate('/subscribe', {
+      state: {
+        planName: plan.name,
+        planAmount,
+        billingCycle: billing,
+      }
+    });
   };
 
   return (
@@ -90,6 +102,94 @@ export default function PricingPlans() {
           box-shadow: 0 10px 28px rgba(14,165,233,0.45);
           transform: translateY(-2px);
         }
+
+        /* Pill toggle */
+        .billing-toggle {
+          display: flex;
+          align-items: center;
+          width: 320px;
+          max-width: 100%;
+          background: #fff;
+          border: 1.5px solid #e0f2fe;
+          border-radius: 100px;
+          padding: 5px;
+          box-shadow: 0 4px 16px rgba(14,165,233,0.08);
+          position: relative;
+        }
+        .billing-toggle-btn {
+          position: relative;
+          z-index: 1;
+          flex: 1 1 0;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          white-space: nowrap;
+          padding: 10px 22px;
+          border-radius: 100px;
+          border: none;
+          background: transparent;
+          font-size: 14px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: color 0.25s ease;
+          color: #64748b;
+        }
+        .billing-toggle-btn.active {
+          color: #fff;
+        }
+        .billing-toggle-btn.active .save-chip {
+          background: rgba(255,255,255,0.2);
+          color: #fff;
+          border-color: rgba(255,255,255,0.35);
+        }
+        .billing-toggle-thumb {
+          position: absolute;
+          top: 5px;
+          bottom: 5px;
+          left: 5px;
+          width: calc(50% - 5px);
+          border-radius: 100px;
+          background: linear-gradient(135deg, #0ea5e9, #0284c7);
+          box-shadow: 0 6px 16px rgba(14,165,233,0.35);
+          transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .billing-toggle-thumb.annual {
+          transform: translateX(100%);
+        }
+        .save-chip {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          background: #ecfdf5;
+          color: #059669;
+          border: 1px solid #a7f3d0;
+          padding: 2px 9px;
+          border-radius: 100px;
+          font-size: 11px;
+          font-weight: 800;
+          margin-left: 6px;
+          vertical-align: middle;
+        }
+        .plan-save-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          background: linear-gradient(135deg, #ecfdf5, #d1fae5);
+          color: #059669;
+          border: 1px solid #a7f3d0;
+          padding: 4px 10px;
+          border-radius: 100px;
+          font-size: 11.5px;
+          font-weight: 800;
+          margin-bottom: 6px;
+        }
+        .strike-price {
+          text-decoration: line-through;
+          color: #878d94;
+          font-size: 18px;
+          font-weight: 700;
+        }
+
         @media (max-width: 900px) {
           .plans-grid { grid-template-columns: repeat(2, 1fr) !important; }
         }
@@ -100,12 +200,12 @@ export default function PricingPlans() {
 
       <section id="pricing" style={{
         padding: '100px 6%',
-       background: '#0285c72c' 
+        background: '#0285c72c'
       }}>
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
 
           {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: 64 }}>
+          <div style={{ textAlign: 'center', marginBottom: 40 }}>
             <div style={{
               display: 'inline-block', background: '#e0f2fe', color: '#0284c7',
               padding: '6px 18px', borderRadius: 100, fontSize: 13,
@@ -125,6 +225,26 @@ export default function PricingPlans() {
             </p>
           </div>
 
+          {/* Billing toggle */}
+          <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 44 }}>
+            <div className="billing-toggle">
+              <div className={`billing-toggle-thumb ${billing === 'annual' ? 'annual' : ''}`} />
+              <button
+                onClick={() => setBilling('monthly')}
+                className={`billing-toggle-btn ${billing === 'monthly' ? 'active' : ''}`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setBilling('annual')}
+                className={`billing-toggle-btn ${billing === 'annual' ? 'active' : ''}`}
+              >
+                Annual
+                <span className="save-chip">Save 20%</span>
+              </button>
+            </div>
+          </div>
+
           {/* Plans Grid — equal height via CSS grid + flex columns */}
           <div
             className="plans-grid"
@@ -132,7 +252,7 @@ export default function PricingPlans() {
               display: 'grid',
               gridTemplateColumns: 'repeat(2, 1fr)',
               gap: 24,
-              alignItems: 'stretch',   /* all rows same height */
+              alignItems: 'stretch',
             }}
           >
             {plans.length === 0 && (
@@ -140,76 +260,96 @@ export default function PricingPlans() {
                 {pricingError || 'Loading plans...'}
               </div>
             )}
-            {plans.map(plan => (
-              <div
-                key={plan.id}
-                className={`plan-card ${plan.is_popular ? 'popular' : ''}`}
-              >
-             {!!plan.is_popular && (
-                  <div style={{
-                    position: 'absolute', top: -14, left: '50%',
-                    transform: 'translateX(-50%)',
-                    background: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
-                    color: '#fff', padding: '5px 20px',
-                    borderRadius: 100, fontSize: 12, fontWeight: 700,
-                    whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(14,165,233,0.3)'
-                  }}>
-                    ✦ Most Popular
-                  </div>
-                )}
+            {plans.map(plan => {
+              const isAnnual = billing === 'annual';
+              const displayPrice = isAnnual ? plan.price_annual_per_month : plan.price_monthly;
+              const yearlySavings = Math.max(0, (plan.price_monthly * 12) - plan.price_annual);
 
-                {/* Plan name */}
-                <div style={{
-                  fontSize: 13, fontWeight: 700, color: plan.is_popular ? '#0ea5e9' : '#94a3b8',
-                  letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 12
-                }}>
-                  {plan.name}
-                </div>
-
-                {/* Price */}
-                <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, marginBottom: 6 }}>
-                  <span style={{ fontSize: 16, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>₹</span>
-                  <span style={{ fontSize: 44, fontWeight: 900, color: '#0f172a', lineHeight: 1, letterSpacing: '-2px' }}>
-                    {plan.price}
-                  </span>
-                  <span style={{ fontSize: 14, color: '#94a3b8', marginBottom: 6, marginLeft: 2 }}>/mo</span>
-                </div>
-
-                <p style={{ fontSize: 13, color: '#94a3b8', marginBottom: 24, lineHeight: 1.5 }}>
-                  Billed monthly, cancel anytime
-                </p>
-
-                {/* Divider */}
-                <div style={{ height: 1, background: '#f1f5f9', marginBottom: 24 }} />
-
-                {/* Features — flex-grow pushes button to bottom */}
-                <ul style={{ listStyle: 'none', marginBottom: 28, flex: 1 }}>
-                  {(Array.isArray(plan.features) ? plan.features : []).map((f, i) => (
-                    <li key={i} style={{
-                      display: 'flex', alignItems: 'flex-start', gap: 10,
-                      padding: '7px 0', color: '#475569', fontSize: 14,
-                      borderBottom: i < (Array.isArray(plan.features) ? plan.features.length : 0) - 1 ? '1px solid #f8fafc' : 'none'
-                    }}>
-                      <span style={{
-                        width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
-                        background: plan.is_popular ? 'linear-gradient(135deg,#0ea5e9,#0284c7)' : '#e0f2fe',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        fontSize: 11, color: plan.is_popular ? '#fff' : '#0284c7',
-                        fontWeight: 700, marginTop: 1
-                      }}>✓</span>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  onClick={() => handleSelect(plan)}
-                  className={`plan-btn ${plan.is_popular ? 'plan-btn-popular' : 'plan-btn-default'}`}
+              return (
+                <div
+                  key={plan.id}
+                  className={`plan-card ${plan.is_popular ? 'popular' : ''}`}
                 >
-                  Get Started {plan.is_popular ? '→' : ''}
-                </button>
-              </div>
-            ))}
+                  {!!plan.is_popular && (
+                    <div style={{
+                      position: 'absolute', top: -14, left: '50%',
+                      transform: 'translateX(-50%)',
+                      background: 'linear-gradient(135deg, #0ea5e9, #0284c7)',
+                      color: '#fff', padding: '5px 20px',
+                      borderRadius: 100, fontSize: 12, fontWeight: 700,
+                      whiteSpace: 'nowrap', boxShadow: '0 4px 12px rgba(14,165,233,0.3)'
+                    }}>
+                      ✦ Most Popular
+                    </div>
+                  )}
+
+                  {/* Plan name */}
+                  <div style={{
+                    fontSize: 13, fontWeight: 700, color: plan.is_popular ? '#0ea5e9' : '#94a3b8',
+                    letterSpacing: '1px', textTransform: 'uppercase', marginBottom: 12
+                  }}>
+                    {plan.name}
+                  </div>
+
+                  {/* Savings badge (annual only) */}
+                  {isAnnual && yearlySavings > 0 && (
+                    <div className="plan-save-badge">
+                      🎉 Save ${yearlySavings.toFixed(0)}/yr
+                    </div>
+                  )}
+
+                  {/* Price */}
+                  <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
+                    {isAnnual && (
+                      <span className="strike-price">${plan.price_monthly}</span>
+                    )}
+                    <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4 }}>
+                      <span style={{ fontSize: 16, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>$</span>
+                      <span style={{ fontSize: 44, fontWeight: 900, color: '#0f172a', lineHeight: 1, letterSpacing: '-2px' }}>
+                        {displayPrice}
+                      </span>
+                      <span style={{ fontSize: 14, color: '#94a3b8', marginBottom: 6, marginLeft: 2 }}>/mo</span>
+                    </div>
+                  </div>
+
+                  <p style={{ fontSize: 13, color: '#94a3b8', marginBottom: 24, lineHeight: 1.5 }}>
+                    {isAnnual
+                      ? `Billed $${plan.price_annual}/yr · cancel anytime`
+                      : 'Billed monthly, cancel anytime'}
+                  </p>
+
+                  {/* Divider */}
+                  <div style={{ height: 1, background: '#f1f5f9', marginBottom: 24 }} />
+
+                  {/* Features — flex-grow pushes button to bottom */}
+                  <ul style={{ listStyle: 'none', marginBottom: 28, flex: 1 }}>
+                    {plan.features.map((f, i) => (
+                      <li key={i} style={{
+                        display: 'flex', alignItems: 'flex-start', gap: 10,
+                        padding: '7px 0', color: '#475569', fontSize: 14,
+                        borderBottom: i < plan.features.length - 1 ? '1px solid #f8fafc' : 'none'
+                      }}>
+                        <span style={{
+                          width: 20, height: 20, borderRadius: '50%', flexShrink: 0,
+                          background: plan.is_popular ? 'linear-gradient(135deg,#0ea5e9,#0284c7)' : '#e0f2fe',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 11, color: plan.is_popular ? '#fff' : '#0284c7',
+                          fontWeight: 700, marginTop: 1
+                        }}>✓</span>
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+
+                  <button
+                    onClick={() => handleSelect(plan)}
+                    className={`plan-btn ${plan.is_popular ? 'plan-btn-popular' : 'plan-btn-default'}`}
+                  >
+                    Get Started {plan.is_popular ? '→' : ''}
+                  </button>
+                </div>
+              );
+            })}
           </div>
 
           {/* Trust note */}
