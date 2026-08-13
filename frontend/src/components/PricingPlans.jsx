@@ -6,6 +6,7 @@ export default function PricingPlans() {
   const [plans, setPlans] = useState([]);
   const [pricingError, setPricingError] = useState('');
   const [billing, setBilling] = useState('monthly'); // 'monthly' | 'annual'
+  const [promo, setPromo] = useState({ active: false, percent: 0, slots_left: 0, limit: 0 });
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -23,7 +24,12 @@ export default function PricingPlans() {
           price_annual: Number(plan.price_annual ?? 0),
           price_annual_per_month: Number(plan.price_annual_per_month ?? 0),
           annual_discount_percent: Number(plan.annual_discount_percent ?? 20),
+          promo_active: !!plan.promo_active,
+          promo_price_monthly: plan.promo_price_monthly != null ? Number(plan.promo_price_monthly) : null,
+          promo_price_annual: plan.promo_price_annual != null ? Number(plan.promo_price_annual) : null,
+          promo_price_annual_per_month: plan.promo_price_annual_per_month != null ? Number(plan.promo_price_annual_per_month) : null,
         })));
+        setPromo(r.data?.promo || { active: false, percent: 0, slots_left: 0, limit: 0 });
         setPricingError(list.length ? '' : (r.data?.message || r.data?.error || 'Plans are unavailable right now.'));
       })
       .catch(err => {
@@ -36,12 +42,16 @@ export default function PricingPlans() {
   }, []);
 
   const handleSelect = (plan) => {
-    const planAmount = billing === 'annual' ? plan.price_annual : plan.price_monthly;
+    const regularAmount = billing === 'annual' ? plan.price_annual : plan.price_monthly;
+    const promoAmount = billing === 'annual' ? plan.promo_price_annual : plan.promo_price_monthly;
+    const usingPromo = promo.active && promoAmount != null;
+
     navigate('/subscribe', {
       state: {
         planName: plan.name,
-        planAmount,
+        planAmount: usingPromo ? promoAmount : regularAmount,
         billingCycle: billing,
+        usePromo: usingPromo,
       }
     });
   };
@@ -103,7 +113,6 @@ export default function PricingPlans() {
           transform: translateY(-2px);
         }
 
-        /* Pill toggle */
         .billing-toggle {
           display: flex;
           align-items: center;
@@ -189,6 +198,31 @@ export default function PricingPlans() {
           font-size: 18px;
           font-weight: 700;
         }
+        .promo-banner {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+          background: linear-gradient(135deg,#fef3c7,#fde68a);
+          border: 1px solid #fbbf24;
+          border-radius: 100px;
+          padding: 10px 20px;
+          font-size: 13px;
+          color: #92400e;
+          font-weight: 700;
+        }
+        .promo-tag {
+          position: absolute;
+          top: -14px;
+          right: 20px;
+          background: linear-gradient(135deg,#f59e0b,#d97706);
+          color: #fff;
+          padding: 5px 14px;
+          border-radius: 100px;
+          font-size: 11px;
+          font-weight: 800;
+          box-shadow: 0 4px 12px rgba(217,119,6,0.35);
+          white-space: nowrap;
+        }
 
         @media (max-width: 900px) {
           .plans-grid { grid-template-columns: repeat(2, 1fr) !important; }
@@ -205,7 +239,7 @@ export default function PricingPlans() {
         <div style={{ maxWidth: 1200, margin: '0 auto' }}>
 
           {/* Header */}
-          <div style={{ textAlign: 'center', marginBottom: 40 }}>
+          <div style={{ textAlign: 'center', marginBottom: 24 }}>
             <div style={{
               display: 'inline-block', background: '#e0f2fe', color: '#0284c7',
               padding: '6px 18px', borderRadius: 100, fontSize: 13,
@@ -224,6 +258,15 @@ export default function PricingPlans() {
               Start free, scale as you grow. No hidden fees.
             </p>
           </div>
+
+          {/* Promo banner */}
+          {promo.active && (
+            <div style={{ textAlign: 'center', marginBottom: 32 }}>
+              <span className="promo-banner">
+                🔥 {promo.percent}% OFF launch offer — only {promo.slots_left} of {promo.limit} spots left
+              </span>
+            </div>
+          )}
 
           {/* Billing toggle */}
           <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 44 }}>
@@ -245,7 +288,7 @@ export default function PricingPlans() {
             </div>
           </div>
 
-          {/* Plans Grid — equal height via CSS grid + flex columns */}
+          {/* Plans Grid */}
           <div
             className="plans-grid"
             style={{
@@ -265,11 +308,18 @@ export default function PricingPlans() {
               const displayPrice = isAnnual ? plan.price_annual_per_month : plan.price_monthly;
               const yearlySavings = Math.max(0, (plan.price_monthly * 12) - plan.price_annual);
 
+           const promoPrice = isAnnual ? plan.promo_price_annual_per_month : plan.promo_price_monthly;
+const showPromo = promo.active && promoPrice != null;
+
               return (
                 <div
                   key={plan.id}
                   className={`plan-card ${plan.is_popular ? 'popular' : ''}`}
                 >
+                  {showPromo && (
+                    <div className="promo-tag">{promo.percent}% OFF</div>
+                  )}
+
                   {!!plan.is_popular && (
                     <div style={{
                       position: 'absolute', top: -14, left: '50%',
@@ -291,8 +341,8 @@ export default function PricingPlans() {
                     {plan.name}
                   </div>
 
-                  {/* Savings badge (annual only) */}
-                  {isAnnual && yearlySavings > 0 && (
+                  {/* Savings badge (annual only, non-promo) */}
+                  {!showPromo && isAnnual && yearlySavings > 0 && (
                     <div className="plan-save-badge">
                       🎉 Save ${yearlySavings.toFixed(0)}/yr
                     </div>
@@ -300,28 +350,30 @@ export default function PricingPlans() {
 
                   {/* Price */}
                   <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginBottom: 6, flexWrap: 'wrap' }}>
-                    {isAnnual && (
-                      <span className="strike-price">${plan.price_monthly}</span>
+                    {(showPromo || isAnnual) && (
+                      <span className="strike-price">${showPromo ? displayPrice : plan.price_monthly}</span>
                     )}
                     <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4 }}>
                       <span style={{ fontSize: 16, fontWeight: 700, color: '#64748b', marginBottom: 6 }}>$</span>
                       <span style={{ fontSize: 44, fontWeight: 900, color: '#0f172a', lineHeight: 1, letterSpacing: '-2px' }}>
-                        {displayPrice}
+                        {showPromo ? promoPrice : displayPrice}
                       </span>
                       <span style={{ fontSize: 14, color: '#94a3b8', marginBottom: 6, marginLeft: 2 }}>/mo</span>
                     </div>
                   </div>
 
                   <p style={{ fontSize: 13, color: '#94a3b8', marginBottom: 24, lineHeight: 1.5 }}>
-                    {isAnnual
-                      ? `Billed $${plan.price_annual}/yr · cancel anytime`
-                      : 'Billed monthly, cancel anytime'}
+                    {showPromo
+                      ? `Launch price for first ${promo.limit} customers · cancel anytime`
+                      : isAnnual
+                        ? `Billed $${plan.price_annual}/yr · cancel anytime`
+                        : 'Billed monthly, cancel anytime'}
                   </p>
 
                   {/* Divider */}
                   <div style={{ height: 1, background: '#f1f5f9', marginBottom: 24 }} />
 
-                  {/* Features — flex-grow pushes button to bottom */}
+                  {/* Features */}
                   <ul style={{ listStyle: 'none', marginBottom: 28, flex: 1 }}>
                     {plan.features.map((f, i) => (
                       <li key={i} style={{

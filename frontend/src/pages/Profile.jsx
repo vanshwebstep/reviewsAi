@@ -33,7 +33,7 @@ export default function Profile() {
     { icon: '✉️', label: 'Email', value: user.email },
     { icon: '📞', label: 'Phone', value: user.phone },
     { icon: '📋', label: 'Plan', value: user.plan_name },
-    { icon: '💰', label: 'Amount', value: `₹${user.plan_amount}/mo` },
+    { icon: '💰', label: 'Amount', value: `$${user.plan_amount}/mo` },
     { icon: '🔗', label: 'Business URL', value: user.google_business_url, isLink: true },
   ];
 

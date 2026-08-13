@@ -189,7 +189,7 @@ export default function Plans() {
                     {plan.name}
                   </div>
                   <div style={{ display: 'flex', alignItems: 'flex-end', gap: 4, marginBottom: 6 }}>
-                    <span style={{ fontSize: 16, fontWeight: 700, color: '#64748b' }}>₹</span>
+                    <span style={{ fontSize: 16, fontWeight: 700, color: '#64748b' }}>$</span>
                     <span style={{ fontSize: 40, fontWeight: 900, color: '#0f172a', lineHeight: 1 }}>{plan.price}</span>
                     <span style={{ fontSize: 14, color: '#94a3b8', marginLeft: 2 }}>/mo</span>
                   </div>

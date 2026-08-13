@@ -63,6 +63,7 @@ export default function Subscribe() {
     plan_name: state?.planName || savedForm.plan_name || '',
     plan_amount: state?.planAmount || savedForm.plan_amount || '',
     billing_cycle: state?.billingCycle || savedForm.billing_cycle || 'monthly',
+    use_promo: state?.usePromo ?? savedForm.use_promo ?? false,
     google_business_url: savedForm.google_business_url || '',
     password: savedForm.password || '',
   });
@@ -131,6 +132,23 @@ export default function Subscribe() {
     } catch (err) {
       const payload = parseApiPayload(err.response?.data);
       const status = err.response?.status;
+
+      if (status === 410) {
+        // Promo sold out mid-flow — drop promo, fall back to regular price, let them retry
+        setForm(f => ({ ...f, use_promo: false }));
+        setAlert({
+          type: 'warning',
+          title: 'Promo offer just sold out',
+          message: 'The launch promo filled up while you were filling the form. You can continue at the regular price.',
+          actions: [{
+            label: 'Continue at regular price',
+            variant: 'primary',
+            onClick: () => setAlert(null),
+          }]
+        });
+        return;
+      }
+
       const message = payload.message || payload.error || err.message || 'Please check your connection and try again.';
       setAlert({
         type: 'error',
@@ -236,6 +254,13 @@ export default function Subscribe() {
               color: '#fff', padding: '4px 14px',
               borderRadius: 100, fontSize: 15, fontWeight: 600,
             }}>${form.plan_amount}<span style={{ fontWeight: 500, fontSize: 12, opacity: 0.85 }}>{form.billing_cycle === 'annual' ? '/yr' : '/mo'}</span></span>
+            {form.use_promo && (
+              <span style={{
+                marginLeft: 8, background: '#fef3c7', color: '#92400e',
+                padding: '3px 10px', borderRadius: 100, fontSize: 11, fontWeight: 700,
+                border: '1px solid #fbbf24'
+              }}>🔥 Launch Promo</span>
+            )}
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
