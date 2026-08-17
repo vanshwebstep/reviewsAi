@@ -12,7 +12,12 @@ import Plans from './pages/Plans';
 import Contact from './pages/Contact';
 import UpgradeSuccess from './pages/UpgradeSuccess';
 import SmartReply from './pages/SmartReply'
-
+import AdminLogin from './pages/admin/AdminLogin';
+import AdminLayout from './pages/admin/AdminLayout';
+import AdminUsers from './pages/admin/AdminUsers';
+import AdminPlans from './pages/admin/AdminPlans';
+import AdminPromo from './pages/admin/AdminPromo';
+import AdminDashboard from './pages/admin/AdminDashboard';
 const loaderStyle = {
   minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
   fontFamily: "'Poppins', sans-serif", color: '#64748b', fontSize: 14,
@@ -25,6 +30,11 @@ function ProtectedRoute({ children }) {
   return children;
 }
 
+function AdminProtectedRoute({ children }) {
+  const adminToken = localStorage.getItem('adminToken');
+  if (!adminToken) return <Navigate to="/admin/login" replace />;
+  return children;
+}
 function AppRoutes() {
   const { user, loading } = useAuth();
 
@@ -43,6 +53,14 @@ function AppRoutes() {
       <Route path="/contact" element={<Contact />} />
       <Route path="/upgrade/success" element={<ProtectedRoute><UpgradeSuccess /></ProtectedRoute>} />
       <Route path="/smart-reply" element={<ProtectedRoute><SmartReply /></ProtectedRoute>} />
+      <Route path="/admin/login" element={<AdminLogin />} />
+      <Route path="/admin" element={<AdminProtectedRoute><AdminLayout /></AdminProtectedRoute>}>
+        <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="users" element={<AdminUsers />} />
+        <Route path="plans" element={<AdminPlans />} />
+        <Route path="promo" element={<AdminPromo />} />
+        <Route index element={<Navigate to="dashboard" replace />} />
+      </Route>
     </Routes>
   );
 }
