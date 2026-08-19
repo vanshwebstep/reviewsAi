@@ -91,15 +91,15 @@ export default function AdminPromo() {
               <div style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.6px', marginBottom: 12 }}>
                 Live preview
               </div>
-              {promo.is_active ? (
-                <div style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 8,
-                  background: 'linear-gradient(135deg,#fef3c7,#fde68a)', border: '1px solid #fbbf24',
-                  borderRadius: 100, padding: '11px 20px', fontSize: 13, color: '#92400e', fontWeight: 700,
-                }}>
-                  🔥 {promo.percent || 0}% OFF launch offer — first {promo.slot_limit || 0} customers
-                </div>
-              ) : (
+             {promo.is_active ? (
+  <div style={{
+    display: 'inline-flex', alignItems: 'center', gap: 8,
+    background: 'linear-gradient(135deg,#fef3c7,#fde68a)', border: '1px solid #fbbf24',
+    borderRadius: 100, padding: '11px 20px', fontSize: 13, color: '#92400e', fontWeight: 700,
+  }}>
+    🔥 {promo.percent || 0}% OFF · ⏳ Limited time — first {promo.slot_limit || 0} customers
+  </div>
+) : (
                 <div style={{ fontSize: 13, color: '#94a3b8', lineHeight: 1.6 }}>
                   Promo is currently disabled. Pricing page will show regular prices only.
                 </div>

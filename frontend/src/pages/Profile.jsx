@@ -54,10 +54,10 @@ export default function Profile() {
           gap: 14px;
         }
         .info-row:last-child { border-bottom: none; }
-        .nav-link {
-          text-decoration: none; color: #64748b; font-size: 13px; font-weight: 600;
-          padding: 8px 16px; border-radius: 100px; transition: all 0.2s; white-space: nowrap;
-        }
+          .nav-link {
+  text-decoration: none; color: #64748b; font-size: 15px; font-weight: 600;
+  padding: 10px 18px; border-radius: 100px; transition: all 0.2s; white-space: nowrap;
+}
         .nav-link:hover { color: #0284c7; background: #f0f9ff; }
         .nav-link.active {
           color: #fff; background: linear-gradient(135deg, #0ea5e9, #0284c7);

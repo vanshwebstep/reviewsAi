@@ -7,7 +7,7 @@ export default function SmartReply() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-
+const [templateChoice, setTemplateChoice] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState('');
@@ -17,7 +17,22 @@ const [error, setError] = useState('');
 const [copiedIndex, setCopiedIndex] = useState(null);
 
   if (!user) return null;
-
+const PREDEFINED_REVIEWS = {
+  positive: [
+    "Amazing service! The staff was super friendly and helpful throughout my visit.",
+    "Best experience I've had in a long time. Highly recommend to everyone!",
+    "Great quality and fast service. Will definitely be coming back again.",
+    "Loved everything about this place — clean, professional, and courteous staff.",
+    "Exceeded my expectations. Great value for money and excellent customer care.",
+  ],
+  negative: [
+    "Very disappointed with the service. Had to wait way too long to get helped.",
+    "The quality wasn't what I expected, and staff seemed uninterested in helping.",
+    "Not satisfied at all. Wouldn't recommend based on my experience.",
+    "Service was slow and communication was poor throughout the whole process.",
+    "Below average experience. There's a lot of room for improvement here.",
+  ],
+};
   const isLocked = user.plan_name === 'Starter';
 
   const navItems = [
@@ -62,15 +77,29 @@ const handleCopy = (text, index) => {
     setTimeout(() => setCopiedIndex(null), 2000);
   });
 };
+const handleTemplateSelect = (e) => {
+  const value = e.target.value;
+  setTemplateChoice(value);
+  if (!value) return;
+
+  const [type, indexStr] = value.split(':');
+  const index = parseInt(indexStr, 10);
+  const text = PREDEFINED_REVIEWS[type]?.[index];
+  if (!text) return;
+
+  setReviewText(text);
+  setRating(type === 'positive' ? 5 : 2);
+};
+
 
   return (
     <>
       <style>{`
         * { font-family: 'Poppins', sans-serif; }
-        .nav-link {
-          text-decoration: none; color: #64748b; font-size: 13px; font-weight: 600;
-          padding: 8px 16px; border-radius: 100px; transition: all 0.2s; white-space: nowrap;
-        }
+         .nav-link {
+  text-decoration: none; color: #64748b; font-size: 15px; font-weight: 600;
+  padding: 10px 18px; border-radius: 100px; transition: all 0.2s; white-space: nowrap;
+}
         .nav-link:hover { color: #0284c7; background: #f0f9ff; }
         .nav-link.active { color: #fff; background: linear-gradient(135deg, #0ea5e9, #0284c7); }
         .logout-btn {
@@ -206,17 +235,41 @@ const handleCopy = (text, index) => {
                 </div>
               </div>
 
-              <div style={{ marginBottom: 22 }}>
-                <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 7 }}>
-                  Review Text
-                </label>
-                <textarea
-                  className="sr-textarea"
-                  value={reviewText}
-                  onChange={e => setReviewText(e.target.value)}
-                  placeholder="Paste the customer's review here..."
-                />
-              </div>
+           <div style={{ marginBottom: 22 }}>
+  <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 7 }}>
+    Review Text
+  </label>
+
+  <select
+    className="sr-input"
+    value={templateChoice}
+    onChange={handleTemplateSelect}
+    style={{ marginBottom: 10, cursor: 'pointer' }}
+  >
+    <option value="">— Or pick a sample review —</option>
+    <optgroup label="😊 Positive">
+      {PREDEFINED_REVIEWS.positive.map((r, i) => (
+        <option key={`positive:${i}`} value={`positive:${i}`}>
+          {r.slice(0, 55)}{r.length > 55 ? '…' : ''}
+        </option>
+      ))}
+    </optgroup>
+    <optgroup label="😞 Negative">
+      {PREDEFINED_REVIEWS.negative.map((r, i) => (
+        <option key={`negative:${i}`} value={`negative:${i}`}>
+          {r.slice(0, 55)}{r.length > 55 ? '…' : ''}
+        </option>
+      ))}
+    </optgroup>
+  </select>
+
+  <textarea
+    className="sr-textarea"
+    value={reviewText}
+    onChange={e => setReviewText(e.target.value)}
+    placeholder="Paste the customer's review here..."
+  />
+</div>
 
               {error && (
                 <div style={{

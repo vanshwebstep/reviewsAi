@@ -7,8 +7,11 @@ import SubscribeSuccess from './pages/SubscribeSuccess.jsx'
 import Success from './pages/Success.jsx'
 import Login from './pages/Login.jsx'
 import Dashboard from './pages/Dashboard.jsx'
+import { ModalProvider } from './context/ModalContext'
 import Profile from './pages/Profile';
 import Plans from './pages/Plans';
+import ChatbotWidget from './components/ChatbotWidget';
+
 import Contact from './pages/Contact';
 import UpgradeSuccess from './pages/UpgradeSuccess';
 import SmartReply from './pages/SmartReply'
@@ -69,7 +72,10 @@ export default function App() {
   return (
     <BrowserRouter basename="/demo/reviewsai/frontend">
       <AuthProvider>
-        <AppRoutes />
+        <ModalProvider>
+          <AppRoutes />
+           <ChatbotWidget />
+        </ModalProvider>
       </AuthProvider>
     </BrowserRouter>
   )

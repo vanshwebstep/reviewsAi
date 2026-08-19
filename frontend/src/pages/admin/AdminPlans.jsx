@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
 import { adminListPlans, adminAddPlan, adminUpdatePlan, adminDeletePlan } from '../../api/adminApi';
 
-const blank = { name: '', price: '', max_profiles: 1, is_popular: false, annual_discount_percent: 20, currency: 'USD', features: [] };
-
+const blank = { name: '', price: '', max_profiles: 1, is_popular: false, annual_discount_percent: 20, currency: 'USD', features: [], trial_enabled: false, trial_days: 15 };
 export default function AdminPlans() {
   const [plans, setPlans] = useState([]);
   const [form, setForm] = useState(blank);
@@ -205,7 +204,18 @@ export default function AdminPlans() {
                 <input type="checkbox" checked={!!form.is_popular} onChange={e => setForm({ ...form, is_popular: e.target.checked })} />
                 Mark as "Most popular"
               </label>
+<label style={{ ...label, display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' }}>
+  <input type="checkbox" checked={!!form.trial_enabled} onChange={e => setForm({ ...form, trial_enabled: e.target.checked })} />
+  Enable free trial
+</label>
 
+{form.trial_enabled && (
+  <div>
+    <label style={label}>Trial days</label>
+    <input className="ap-input" type="number" min="1" value={form.trial_days}
+      onChange={e => setForm({ ...form, trial_days: e.target.value })} required />
+  </div>
+)}
               <label style={label}>Features (one per line)</label>
               <textarea className="ap-input" value={featuresText} onChange={e => setFeaturesText(e.target.value)}
                 placeholder={'Unlimited reviews\nQR code generator\nPriority support'}

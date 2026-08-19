@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { createCheckoutSession } from '../api/api';
 import PremiumAlert from '../components/PremiumAlert';
+import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 
 const fieldLabels = {
   full_name: 'Business Name',
   email: 'Email Address',
-  phone: 'Phone Number',
   google_business_url: 'Google Business URL',
   password: 'Create Password',
 };
@@ -14,7 +15,6 @@ const fieldLabels = {
 const fieldIcons = {
   full_name: '🏢',
   email: '\u2709\uFE0F',
-  phone: '\u{1F4DE}',
   google_business_url: '\u{1F517}',
   password: '\u{1F512}',
 };
@@ -22,7 +22,6 @@ const fieldIcons = {
 const fieldPlaceholders = {
   full_name: 'Enter Your Business Name',
   email: 'you@example.com',
-  phone: '+91 98765 43210',
   google_business_url: 'Paste your Google Business profile URL',
   password: 'Min. 6 characters',
 };
@@ -80,8 +79,10 @@ export default function Subscribe() {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
 
-
   const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
+
+  // react-phone-number-input gives E.164 string directly (e.g. +919876543210)
+  const handlePhoneChange = value => setForm(f => ({ ...f, phone: value || '' }));
 
   const handleSubmit = async () => {
     const requiredFields = ['full_name', 'email', 'phone', 'plan_name', 'plan_amount', 'google_business_url', 'password'];
@@ -92,6 +93,16 @@ export default function Subscribe() {
         type: 'warning',
         title: 'Missing details',
         message: 'Please fill all fields before starting the Stripe demo payment.',
+        actions: [{ label: 'Got it', variant: 'primary', onClick: () => setAlert(null) }]
+      });
+      return;
+    }
+
+    if (!isValidPhoneNumber(form.phone)) {
+      setAlert({
+        type: 'warning',
+        title: 'Invalid phone number',
+        message: 'Please enter a valid phone number with country code.',
         actions: [{ label: 'Got it', variant: 'primary', onClick: () => setAlert(null) }]
       });
       return;
@@ -214,6 +225,33 @@ export default function Subscribe() {
           color: #94a3b8; padding: 0;
         }
         .password-input { padding-right: 42px !important; }
+
+        /* Phone input styling to match sub-input design */
+        .phone-input-wrapper {
+          display: flex;
+          align-items: center;
+          border: 1.5px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 0 14px;
+          height: 46px;
+          background: #fff;
+          transition: all 0.2s;
+        }
+        .phone-input-wrapper:hover { border-color: #bae6fd; }
+        .phone-input-wrapper:focus-within { border-color: #0ea5e9; box-shadow: 0 0 0 4px rgba(14,165,233,0.10); }
+        .phone-input-wrapper .PhoneInputInput {
+          border: none;
+          outline: none;
+          font-size: 14px;
+          color: #0f172a;
+          padding: 12px 8px;
+          flex: 1;
+          font-family: 'Poppins', sans-serif;
+          background: transparent;
+        }
+        .phone-input-wrapper .PhoneInputInput::placeholder { color: #cbd5e1; }
+        .phone-input-wrapper .PhoneInputCountrySelect { cursor: pointer; }
+        .phone-input-wrapper .PhoneInputCountryIcon { width: 22px; height: 16px; }
       `}</style>
 
       <div style={{
@@ -264,7 +302,44 @@ export default function Subscribe() {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
-            {['full_name', 'email', 'phone', 'google_business_url', 'password'].map(field => (
+            {['full_name', 'email'].map(field => (
+              <div key={field}>
+                <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 7 }}>
+                  {fieldLabels[field]}
+                </label>
+                <div style={{ position: 'relative' }}>
+                  <span style={{
+                    position: 'absolute', left: 13, top: '50%',
+                    transform: 'translateY(-50%)', fontSize: 15, pointerEvents: 'none'
+                  }}>{fieldIcons[field]}</span>
+                  <input
+                    className="sub-input"
+                    name={field}
+                    type={field === 'email' ? 'email' : 'text'}
+                    value={form[field]}
+                    onChange={handleChange}
+                    placeholder={fieldPlaceholders[field]}
+                  />
+                </div>
+              </div>
+            ))}
+
+            {/* Phone field with country dropdown (react-phone-number-input) */}
+            <div>
+              <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 7 }}>
+                {fieldLabels.phone ?? 'Phone Number'}
+              </label>
+              <PhoneInput
+                international
+                defaultCountry="IN"
+                value={form.phone}
+                onChange={handlePhoneChange}
+                className="phone-input-wrapper"
+                placeholder="Enter phone number"
+              />
+            </div>
+
+            {['google_business_url', 'password'].map(field => (
               <div key={field}>
                 <label style={{ fontSize: 13, fontWeight: 600, color: '#475569', display: 'block', marginBottom: 7 }}>
                   {fieldLabels[field]}
@@ -277,12 +352,7 @@ export default function Subscribe() {
                   <input
                     className={`sub-input${field === 'password' ? ' password-input' : ''}`}
                     name={field}
-                    type={
-                      field === 'email' ? 'email'
-                        : field === 'phone' ? 'tel'
-                          : field === 'password' ? (showPassword ? 'text' : 'password')
-                            : 'text'
-                    }
+                    type={field === 'password' ? (showPassword ? 'text' : 'password') : 'text'}
                     value={form[field]}
                     onChange={handleChange}
                     placeholder={fieldPlaceholders[field]}

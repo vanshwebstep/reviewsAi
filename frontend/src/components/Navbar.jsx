@@ -10,27 +10,27 @@ export default function Navbar() {
     <>
       <style>{`
         .nav-link {
-          text-decoration: none;
-          color: #334155;
-          font-size: 14px;
-          font-weight: 500;
-          padding: 6px 12px;
-          border-radius: 8px;
-          transition: all 0.2s;
-        }
+  text-decoration: none;
+  color: #334155;
+  font-size: 16px;
+  font-weight: 600;
+  padding: 8px 14px;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
         .nav-link:hover {
           color: #0284c7;
           background: #f0f9ff;
         }
-        .nav-cta {
-          background: linear-gradient(135deg, #0ea5e9, #0284c7);
-          color: #fff !important;
-          padding: 8px 20px !important;
-          border-radius: 10px !important;
-          font-weight: 600 !important;
-          box-shadow: 0 4px 12px rgba(14,165,233,0.3);
-          transition: all 0.2s !important;
-        }
+       .nav-cta {
+  background: linear-gradient(135deg, #0ea5e9, #0284c7);
+  color: #fff !important;
+  padding: 9px 22px !important;
+  border-radius: 10px !important;
+  font-weight: 700 !important;
+  box-shadow: 0 4px 12px rgba(14,165,233,0.3);
+  transition: all 0.2s !important;
+}
         .nav-cta:hover {
           background: linear-gradient(135deg, #38bdf8, #0ea5e9) !important;
           transform: translateY(-1px);

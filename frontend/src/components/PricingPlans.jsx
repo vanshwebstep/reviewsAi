@@ -41,20 +41,22 @@ export default function PricingPlans() {
     return () => { active = false; };
   }, []);
 
-  const handleSelect = (plan) => {
-    const regularAmount = billing === 'annual' ? plan.price_annual : plan.price_monthly;
-    const promoAmount = billing === 'annual' ? plan.promo_price_annual : plan.promo_price_monthly;
-    const usingPromo = promo.active && promoAmount != null;
+const handleSelect = (plan) => {
+  const regularAmount = billing === 'annual' ? plan.price_annual : plan.price_monthly;
+  const promoAmount = billing === 'annual' ? plan.promo_price_annual : plan.promo_price_monthly;
+  const usingPromo = promo.active && promoAmount != null;
 
-    navigate('/subscribe', {
-      state: {
-        planName: plan.name,
-        planAmount: usingPromo ? promoAmount : regularAmount,
-        billingCycle: billing,
-        usePromo: usingPromo,
-      }
-    });
-  };
+  navigate('/subscribe', {
+    state: {
+      planName: plan.name,
+      planAmount: usingPromo ? promoAmount : regularAmount,
+      billingCycle: billing,
+      usePromo: usingPromo,
+      trialEnabled: !!plan.trial_enabled,
+      trialDays: plan.trial_days || 0,
+    }
+  });
+};
 
   return (
     <>
@@ -263,7 +265,7 @@ export default function PricingPlans() {
           {promo.active && (
             <div style={{ textAlign: 'center', marginBottom: 32 }}>
               <span className="promo-banner">
-                🔥 {promo.percent}% OFF launch offer — only {promo.slots_left} of {promo.limit} spots left
+                🔥 {promo.percent}% OFF launch offer · ⏳ Limited time — only {promo.slots_left} of {promo.limit} spots left
               </span>
             </div>
           )}
@@ -308,8 +310,8 @@ export default function PricingPlans() {
               const displayPrice = isAnnual ? plan.price_annual_per_month : plan.price_monthly;
               const yearlySavings = Math.max(0, (plan.price_monthly * 12) - plan.price_annual);
 
-           const promoPrice = isAnnual ? plan.promo_price_annual_per_month : plan.promo_price_monthly;
-const showPromo = promo.active && promoPrice != null;
+              const promoPrice = isAnnual ? plan.promo_price_annual_per_month : plan.promo_price_monthly;
+              const showPromo = promo.active && promoPrice != null;
 
               return (
                 <div
@@ -317,7 +319,7 @@ const showPromo = promo.active && promoPrice != null;
                   className={`plan-card ${plan.is_popular ? 'popular' : ''}`}
                 >
                   {showPromo && (
-                    <div className="promo-tag">{promo.percent}% OFF</div>
+                    <div className="promo-tag">⏳ {promo.percent}% OFF</div>
                   )}
 
                   {!!plan.is_popular && (
@@ -362,13 +364,13 @@ const showPromo = promo.active && promoPrice != null;
                     </div>
                   </div>
 
-                  <p style={{ fontSize: 13, color: '#94a3b8', marginBottom: 24, lineHeight: 1.5 }}>
-                    {showPromo
-                      ? `Launch price for first ${promo.limit} customers · cancel anytime`
-                      : isAnnual
-                        ? `Billed $${plan.price_annual}/yr · cancel anytime`
-                        : 'Billed monthly, cancel anytime'}
-                  </p>
+               <p style={{ fontSize: 13, color: '#94a3b8', marginBottom: 24, lineHeight: 1.5 }}>
+  {showPromo
+    ? `Limited time launch price for first ${promo.limit} customers · cancel anytime`
+    : isAnnual
+      ? `Billed $${plan.price_annual}/yr · cancel anytime`
+      : 'Billed monthly, cancel anytime'}
+</p>
 
                   {/* Divider */}
                   <div style={{ height: 1, background: '#f1f5f9', marginBottom: 24 }} />
@@ -393,12 +395,12 @@ const showPromo = promo.active && promoPrice != null;
                     ))}
                   </ul>
 
-                  <button
-                    onClick={() => handleSelect(plan)}
-                    className={`plan-btn ${plan.is_popular ? 'plan-btn-popular' : 'plan-btn-default'}`}
-                  >
-                    Get Started {plan.is_popular ? '→' : ''}
-                  </button>
+              <button
+  onClick={() => handleSelect(plan)}
+  className={`plan-btn ${plan.is_popular ? 'plan-btn-popular' : 'plan-btn-default'}`}
+>
+  {plan.trial_enabled ? `Start ${plan.trial_days}-day free trial` : 'Get Started'} {plan.is_popular ? '→' : ''}
+</button>
                 </div>
               );
             })}

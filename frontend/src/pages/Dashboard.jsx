@@ -28,7 +28,97 @@ function ProfileCard({ profile, subscriptionId, onDeleted, onUpdated }) {
   const [reviewUrl, setReviewUrl] = useState(
     profile.review_token ? `${BACKEND_BASE}/api/review.php?token=${profile.review_token}` : null
   );
+ const handlePrint = () => {
+  if (!qrFullUrl) return;
 
+  const printWindow = window.open('', '_blank', 'width=500,height=700');
+  if (!printWindow) return;
+
+  const safeName = (profile.business_name || '').replace(/</g, '&lt;');
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>${safeName} — Review QR</title>
+        <style>
+          * { font-family: 'Poppins', Arial, sans-serif; box-sizing: border-box; margin: 0; padding: 0; }
+          body {
+            display: flex; align-items: center; justify-content: center;
+            min-height: 100vh; padding: 30px;
+            background: #f8fafc;
+          }
+          .plaque {
+            text-align: center;
+            background: #fff;
+            border: 3px solid #cbd5e1;
+            border-radius: 16px;
+            padding: 40px 32px;
+            max-width: 400px;
+          }
+          .business-name {
+            font-size: 22px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 6px;
+          }
+          .headline {
+            font-size: 24px;
+            font-weight: 700;
+            color: #0f172a;
+            margin-bottom: 6px;
+          }
+          .sub {
+            font-size: 14px;
+            color: #475569;
+            margin-bottom: 28px;
+          }
+          img.qr {
+            width: 220px; height: 220px;
+            padding: 12px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 24px;
+          }
+          .google-logo {
+            font-size: 30px;
+            font-weight: 700;
+            margin-bottom: 12px;
+          }
+          .google-logo span:nth-child(1) { color: #4285F4; }
+          .google-logo span:nth-child(2) { color: #EA4335; }
+          .google-logo span:nth-child(3) { color: #FBBC05; }
+          .google-logo span:nth-child(4) { color: #4285F4; }
+          .google-logo span:nth-child(5) { color: #34A853; }
+          .google-logo span:nth-child(6) { color: #EA4335; }
+          .stars { font-size: 26px; color: #fbbf24; letter-spacing: 4px; }
+          @media print {
+            body { background: #fff; padding: 0; }
+            .plaque { border: none; }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="plaque">
+          <div class="business-name">${safeName}</div>
+          <div class="headline">Your feedback matters</div>
+          <div class="sub">Please take a minute to review us on Google</div>
+          <img class="qr" src="${qrFullUrl}" alt="QR Code" />
+          <div class="google-logo">
+            <span>G</span><span>o</span><span>o</span><span>g</span><span>l</span><span>e</span>
+          </div>
+          <div class="stars">★★★★★</div>
+        </div>
+        <script>
+          window.onload = function() {
+            window.print();
+          };
+        </script>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
+};
   const [isEditing, setIsEditing] = useState(false);
   const [editName, setEditName] = useState(profile.business_name);
   const [editUrl, setEditUrl] = useState(profile.google_business_url);
@@ -275,6 +365,17 @@ function ProfileCard({ profile, subscriptionId, onDeleted, onUpdated }) {
               <button className="download-btn" onClick={handleDownload} style={{ marginTop: 10, padding: '8px', fontSize: 12, width: '100%', maxWidth: 160 }}>
                 ⬇️ Download
               </button>
+              <button
+                onClick={handlePrint}
+                style={{
+                  marginTop: 8, padding: '8px', fontSize: 12, width: '100%', maxWidth: 160,
+                  background: '#f8fafc', color: '#475569',
+                  border: '1.5px solid #e2e8f0', borderRadius: 10,
+                  cursor: 'pointer', fontWeight: 600, transition: 'all 0.2s'
+                }}
+              >
+                🖨️ Print
+              </button>
               {reviewUrl && (
                 <button
                   onClick={handleCopyUrl}
@@ -431,9 +532,9 @@ export default function Dashboard() {
         }
         @keyframes spin { to { transform: rotate(360deg); } }
         .nav-link {
-          text-decoration: none; color: #64748b; font-size: 13px; font-weight: 600;
-          padding: 8px 16px; border-radius: 100px; transition: all 0.2s; white-space: nowrap;
-        }
+  text-decoration: none; color: #64748b; font-size: 15px; font-weight: 600;
+  padding: 10px 18px; border-radius: 100px; transition: all 0.2s; white-space: nowrap;
+}
         .nav-link:hover { color: #0284c7; background: #f0f9ff; }
         .nav-link.active { color: #fff; background: linear-gradient(135deg, #0ea5e9, #0284c7); }
         .nav-link.locked { color: #cbd5e1; cursor: pointer; }
